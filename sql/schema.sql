@@ -1,228 +1,183 @@
--- =====================================================
--- BLUESTOCK MUTUAL FUND STAR SCHEMA
--- Designed to match CSV structure exactly
--- =====================================================
+-- ============================================================
+-- Mutual Fund Analytics Platform
+-- Star Schema Database Design
+-- ============================================================
 
-PRAGMA foreign_keys = ON;
+-- ============================================================
+-- DIMENSION TABLES
+-- ============================================================
 
--- =====================================================
--- DIMENSION TABLE : FUND
--- Source:
--- clean_01_fund_master.csv
--- =====================================================
+DROP TABLE IF EXISTS dim_fund;
 
 CREATE TABLE dim_fund (
 
-```
-amfi_code INTEGER PRIMARY KEY,
+    amfi_code BIGINT PRIMARY KEY,
 
-fund_house TEXT NOT NULL,
+    fund_house TEXT,
+    scheme_name TEXT,
 
-scheme_name TEXT NOT NULL,
+    category TEXT,
+    sub_category TEXT,
 
-category TEXT,
+    plan TEXT,
 
-sub_category TEXT,
+    launch_date TEXT,
 
-plan TEXT,
+    benchmark TEXT,
 
-launch_date DATE,
+    expense_ratio_pct FLOAT,
+    exit_load_pct FLOAT,
 
-benchmark TEXT,
+    min_sip_amount BIGINT,
+    min_lumpsum_amount BIGINT,
 
-expense_ratio_pct REAL,
+    fund_manager TEXT,
 
-exit_load_pct REAL,
+    risk_category TEXT,
 
-min_sip_amount REAL,
-
-min_lumpsum_amount REAL,
-
-fund_manager TEXT,
-
-risk_category TEXT,
-
-sebi_category_code TEXT
-```
+    sebi_category_code TEXT
 
 );
 
--- =====================================================
--- DIMENSION TABLE : DATE
--- Generated from all unique dates
--- =====================================================
+-- ============================================================
+
+DROP TABLE IF EXISTS dim_date;
 
 CREATE TABLE dim_date (
 
-```
-date_key INTEGER PRIMARY KEY,
+    date_key BIGINT PRIMARY KEY,
 
-full_date DATE UNIQUE,
+    full_date DATETIME,
 
-year INTEGER,
+    year INTEGER,
+    quarter INTEGER,
 
-quarter INTEGER,
+    month INTEGER,
+    month_name TEXT,
 
-month INTEGER,
-
-month_name TEXT,
-
-day INTEGER
-```
+    day INTEGER
 
 );
 
--- =====================================================
--- FACT TABLE : NAV HISTORY
--- Source:
--- clean_02_nav_history.csv
--- =====================================================
+-- ============================================================
+-- FACT TABLES
+-- ============================================================
+
+DROP TABLE IF EXISTS fact_nav;
 
 CREATE TABLE fact_nav (
 
-```
-nav_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    amfi_code BIGINT,
 
-amfi_code INTEGER NOT NULL,
+    date_key BIGINT,
 
-date_key INTEGER NOT NULL,
+    nav FLOAT,
 
-nav REAL NOT NULL,
+    PRIMARY KEY (
+        amfi_code,
+        date_key
+    ),
 
-FOREIGN KEY (amfi_code)
-    REFERENCES dim_fund(amfi_code),
+    FOREIGN KEY (amfi_code)
+        REFERENCES dim_fund(amfi_code),
 
-FOREIGN KEY (date_key)
-    REFERENCES dim_date(date_key)
-```
+    FOREIGN KEY (date_key)
+        REFERENCES dim_date(date_key)
 
 );
 
--- =====================================================
--- FACT TABLE : INVESTOR TRANSACTIONS
--- Source:
--- clean_08_investor_transactions.csv
--- =====================================================
+-- ============================================================
+
+DROP TABLE IF EXISTS fact_transactions;
 
 CREATE TABLE fact_transactions (
 
-```
-transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    investor_id TEXT,
 
-investor_id INTEGER,
+    transaction_date DATETIME,
 
-amfi_code INTEGER NOT NULL,
+    amfi_code BIGINT,
 
-date_key INTEGER NOT NULL,
+    transaction_type TEXT,
 
-transaction_type TEXT,
+    amount_inr BIGINT,
 
-amount_inr REAL,
+    state TEXT,
+    city TEXT,
+    city_tier TEXT,
 
-state TEXT,
+    age_group TEXT,
+    gender TEXT,
 
-city TEXT,
+    annual_income_lakh FLOAT,
 
-city_tier TEXT,
+    payment_mode TEXT,
 
-age_group TEXT,
+    kyc_status TEXT,
 
-gender TEXT,
+    full_date DATETIME,
 
-annual_income_lakh REAL,
+    date_key BIGINT,
 
-payment_mode TEXT,
+    FOREIGN KEY (amfi_code)
+        REFERENCES dim_fund(amfi_code),
 
-kyc_status TEXT,
-
-FOREIGN KEY (amfi_code)
-    REFERENCES dim_fund(amfi_code),
-
-FOREIGN KEY (date_key)
-    REFERENCES dim_date(date_key)
-```
+    FOREIGN KEY (date_key)
+        REFERENCES dim_date(date_key)
 
 );
 
--- =====================================================
--- FACT TABLE : PERFORMANCE
--- Source:
--- clean_07_scheme_performance.csv
--- =====================================================
+-- ============================================================
+
+DROP TABLE IF EXISTS fact_performance;
 
 CREATE TABLE fact_performance (
 
-```
-performance_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    amfi_code BIGINT PRIMARY KEY,
 
-amfi_code INTEGER NOT NULL,
+    scheme_name TEXT,
 
-return_1yr_pct REAL,
+    cagr FLOAT,
 
-return_3yr_pct REAL,
+    sharpe FLOAT,
 
-return_5yr_pct REAL,
+    sortino FLOAT,
 
-benchmark_3yr_pct REAL,
+    max_drawdown FLOAT,
 
-alpha REAL,
+    last_nav FLOAT,
 
-beta REAL,
-
-sharpe_ratio REAL,
-
-sortino_ratio REAL,
-
-std_dev_ann_pct REAL,
-
-max_drawdown_pct REAL,
-
-aum_crore REAL,
-
-expense_ratio_pct REAL,
-
-morningstar_rating INTEGER,
-
-risk_grade TEXT,
-
-expense_ratio_flag TEXT,
-
-FOREIGN KEY (amfi_code)
-    REFERENCES dim_fund(amfi_code)
-```
+    updated_at DATETIME
 
 );
+-- ============================================================
 
--- =====================================================
--- FACT TABLE : AUM
--- Source:
--- clean_03_aum_by_fund_house.csv
--- =====================================================
+DROP TABLE IF EXISTS fact_aum;
 
 CREATE TABLE fact_aum (
 
-```
-aum_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date DATETIME,
 
-date_key INTEGER NOT NULL,
+    fund_house TEXT,
 
-fund_house TEXT NOT NULL,
+    aum_lakh_crore FLOAT,
 
-aum_lakh_crore REAL,
+    aum_crore BIGINT,
 
-aum_crore REAL,
+    num_schemes BIGINT,
 
-num_schemes INTEGER,
+    full_date DATETIME,
 
-FOREIGN KEY (date_key)
-    REFERENCES dim_date(date_key)
-```
+    date_key BIGINT,
+
+    FOREIGN KEY (date_key)
+        REFERENCES dim_date(date_key)
 
 );
 
--- =====================================================
+-- ============================================================
 -- INDEXES
--- =====================================================
+-- ============================================================
 
 CREATE INDEX idx_nav_amfi
 ON fact_nav(amfi_code);
@@ -230,10 +185,10 @@ ON fact_nav(amfi_code);
 CREATE INDEX idx_nav_date
 ON fact_nav(date_key);
 
-CREATE INDEX idx_tx_amfi
+CREATE INDEX idx_txn_amfi
 ON fact_transactions(amfi_code);
 
-CREATE INDEX idx_tx_date
+CREATE INDEX idx_txn_date
 ON fact_transactions(date_key);
 
 CREATE INDEX idx_perf_amfi
@@ -241,3 +196,10 @@ ON fact_performance(amfi_code);
 
 CREATE INDEX idx_aum_date
 ON fact_aum(date_key);
+
+CREATE INDEX idx_aum_fundhouse
+ON fact_aum(fund_house);
+
+-- ============================================================
+-- END OF SCHEMA
+-- ============================================================
